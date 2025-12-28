@@ -17,6 +17,14 @@ body {
   overflow-x: hidden;
 }
 
+ul{
+  list-style-type: none;
+}
+
+.nav-link{
+ color :black;
+}
+
 /* Card principale */
 .form-card {
   background-color: var(--White);
@@ -50,4 +58,11 @@ h3.fw-light {
 
 .attribution a {
   color: hsl(228, 45%, 44%);
+}
+
+#myTab{
+  font-weight: bold;
+  color: black !important;
+  font-size: 24px;
+  padding-top: 32px;
 }
