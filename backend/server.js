@@ -24,20 +24,9 @@ if (!fs.existsSync(messagesFile)) {
   console.log('✅ Fichier messages.json créé');
 }
 
-// Route pour recevoir le formulaire
+// Route pour recevoir le formulaire (CREATE)
 app.post('/submit-form', (req, res) => {
   console.log('📩 Formulaire reçu !');
-  console.log(req.body);
-
-  const formData = {
-    firstName: req.body.firstName,
-    lastName: req.body.lastName,
-    email: req.body.email,
-    queryType: req.body.queryType,
-    message: req.body.message,
-    consent: req.body.consent,
-    date: new Date().toLocaleString('fr-FR')
-  };
 
   let messages = [];
   try {
@@ -47,27 +36,32 @@ app.post('/submit-form', (req, res) => {
     console.error('❌ Erreur lecture:', error);
   }
 
+  const formData = {
+    id: Date.now(), // Ajout d'un ID unique indispensable pour UPDATE et DELETE
+    firstName: req.body.firstName,
+    lastName: req.body.lastName,
+    email: req.body.email,
+    queryType: req.body.queryType,
+    message: req.body.message,
+    consent: req.body.consent,
+    date: new Date().toLocaleString('fr-FR')
+  };
+
   messages.push(formData);
 
   try {
     fs.writeFileSync(messagesFile, JSON.stringify(messages, null, 2));
     console.log('✅ Message sauvegardé !');
-    
-    res.json({ 
-      success: true, 
-      message: 'Formulaire reçu avec succès !',
-      data: formData
-    });
+    res.json({ success: true, message: 'Formulaire reçu avec succès !', data: formData });
   } catch (error) {
     console.error('❌ Erreur sauvegarde:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Erreur lors de la sauvegarde' 
-    });
+    res.status(500).json({ success: false, message: 'Erreur lors de la sauvegarde' });
   }
 });
 
-// Route pour voir tous les messages
+
+
+// Route pour voir tous les messages (READ)
 app.get('/messages', (req, res) => {
   try {
     const data = fs.readFileSync(messagesFile, 'utf8');
@@ -79,17 +73,43 @@ app.get('/messages', (req, res) => {
   }
 });
 
-// Démarrage du serveur
-app.listen(PORT, () => {
-  console.log('');
-  console.log('🚀 =====================================');
-  console.log('🚀 SERVEUR DÉMARRÉ !');
-  console.log('🚀 =====================================');
-  console.log('');
-  console.log('📍 Formulaire : http://localhost:' + PORT);
-  console.log('📋 Messages   : http://localhost:' + PORT + '/messages');
-  console.log('');
-  console.log('⏹️  Pour arrêter : Ctrl+C');
-  console.log('');
+
+// Route pour supprimer un message (DELETE)
+app.delete('/messages/:id', (req, res) => {
+    const id = parseInt(req.params.id);
+    try {
+        const data = fs.readFileSync(messagesFile, 'utf8');
+        let messages = JSON.parse(data);
+        messages = messages.filter(msg => msg.id !== id);
+        fs.writeFileSync(messagesFile, JSON.stringify(messages, null, 2));
+        res.json({ success: true, message: 'Message supprimé !' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Erreur lors de la suppression' });
+    }
 });
 
+// Route pour modifier un message (UPDATE)
+app.put('/messages/:id', (req, res) => {
+    const id = parseInt(req.params.id);
+    try {
+        const data = fs.readFileSync(messagesFile, 'utf8');
+        let messages = JSON.parse(data);
+        const index = messages.findIndex(msg => msg.id === id);
+        
+        if (index !== -1) {
+            // On met à jour les données existantes avec les nouvelles reçues
+            messages[index] = { ...messages[index], ...req.body };
+            fs.writeFileSync(messagesFile, JSON.stringify(messages, null, 2));
+            res.json({ success: true, message: 'Message mis à jour !' });
+        } else {
+            res.status(404).json({ success: false, message: 'Message non trouvé' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Erreur lors de la modification' });
+    }
+});
+
+// Démarrage du serveur
+app.listen(PORT, () => {
+  console.log('🚀 SERVEUR DÉMARRÉ sur http://localhost:' + PORT);
+});
